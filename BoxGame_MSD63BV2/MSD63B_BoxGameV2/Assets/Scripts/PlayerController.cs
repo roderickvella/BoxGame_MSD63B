@@ -2,8 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Photon.Pun;
+using TMPro;
 
-public class PlayerController : MonoBehaviour, IPunObservable
+
+public class PlayerController : MonoBehaviour, IPunObservable, IPunInstantiateMagicCallback
 {
     Rigidbody2D body;
 
@@ -25,11 +27,18 @@ public class PlayerController : MonoBehaviour, IPunObservable
 
         photonView = PhotonView.Get(this);
 
-        
-        body = GetComponent<Rigidbody2D>();
 
-        fixedJoystick = GameObject.FindWithTag("Joystick").GetComponent<FixedJoystick>();
-        
+        if (!photonView.IsMine)
+        {
+            //we don't own this instance (player (clone)), therefore destroy rigidbody2d
+            Destroy(GetComponent<Rigidbody2D>());
+        }
+        else
+        {
+            body = GetComponent<Rigidbody2D>();
+
+            fixedJoystick = GameObject.FindWithTag("Joystick").GetComponent<FixedJoystick>();
+        }
 
     
     }
@@ -51,14 +60,15 @@ public class PlayerController : MonoBehaviour, IPunObservable
             vertical = fixedJoystick.Vertical;
         }
 
+        transform.localScale = new Vector3(playerScale.x, playerScale.y, playerScale.z);
 
 
     }
 
     private void FixedUpdate()
     {
-      
-            body.velocity = new Vector2(horizontal * runSpeed, vertical * runSpeed);
+        if(photonView.IsMine)
+           body.velocity = new Vector2(horizontal * runSpeed, vertical * runSpeed);
     }
 
     public void OnPhotonSerializeView(PhotonStream stream, PhotonMessageInfo info)
@@ -68,7 +78,7 @@ public class PlayerController : MonoBehaviour, IPunObservable
             //we own this player (this instance), therefore send others our data
             stream.SendNext(transform.position);
             stream.SendNext(transform.localScale);
-            print("sending data");
+           // print("sending data");
          
         }
         else
@@ -77,7 +87,34 @@ public class PlayerController : MonoBehaviour, IPunObservable
             this.playerPos = (Vector3)stream.ReceiveNext();
             this.playerScale = (Vector3)stream.ReceiveNext();
 
-            print("received player:" + this.playerPos);
+           // print("received player:" + this.playerPos);
         }
+    }
+
+    private void UpdatePlayerName(string nickname)
+    {
+        GetComponentInChildren<TextMeshProUGUI>().text = nickname;
+    }
+
+
+    //is called automatically when a box is instaniated
+    public void OnPhotonInstantiate(PhotonMessageInfo info)
+    {
+        UpdatePlayerName(info.photonView.Owner.NickName);
+
+        float size = Random.Range(0.5f, 1.5f);
+        this.playerScale = new Vector3(size, size, 1);
+
+        //load the colour selected by the player
+        object[] instantiationData = info.photonView.InstantiationData;
+        string colour = (string)instantiationData[0];
+
+        if (colour == "Red")
+            GetComponent<SpriteRenderer>().color = Color.red;
+        else if (colour == "Blue")
+            GetComponent<SpriteRenderer>().color = Color.blue;
+        else if (colour == "Green")
+            GetComponent<SpriteRenderer>().color = Color.green;
+
     }
 }
