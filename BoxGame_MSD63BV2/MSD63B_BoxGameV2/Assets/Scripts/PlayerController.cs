@@ -96,6 +96,15 @@ public class PlayerController : MonoBehaviour, IPunObservable, IPunInstantiateMa
         GetComponentInChildren<TextMeshProUGUI>().text = nickname;
     }
 
+    public void ChangeSizeFromMasterClient(List<PlayerInfo> playerInfos)
+    {
+        foreach(PlayerInfo playerInfo in playerInfos)
+        {
+            if (photonView.Owner.ActorNumber == playerInfo.actorNumber)
+                this.playerScale = playerInfo.size;
+        }
+    }
+
 
     //is called automatically when a box is instaniated
     public void OnPhotonInstantiate(PhotonMessageInfo info)
