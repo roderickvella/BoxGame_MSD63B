@@ -126,4 +126,32 @@ public class PlayerController : MonoBehaviour, IPunObservable, IPunInstantiateMa
             GetComponent<SpriteRenderer>().color = Color.green;
 
     }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            if (photonView.IsMine)
+            {
+                //get scale of object we collided with
+                float scaleOther = collision.transform.localScale.x;
+                //get scale of this object (that I own)
+                float scaleMine = this.transform.localScale.x;
+
+                int destroyPlayerId;
+                if(scaleMine > scaleOther)
+                {
+                    destroyPlayerId = collision.gameObject.GetComponent<PlayerController>().photonView.Owner.ActorNumber;
+                }
+                else
+                {
+                    destroyPlayerId = this.photonView.Owner.ActorNumber;
+                }
+
+                //inform everyone to destroy smallest box (eaten box)
+                GameObject.Find("Scripts").GetComponent<NetworkManager>().DestroyPlayer(destroyPlayerId);
+
+            }
+        }
+    }
 }

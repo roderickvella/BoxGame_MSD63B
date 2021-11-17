@@ -42,6 +42,28 @@ public class NetworkManager : MonoBehaviour, IPunObservable
 
     }
 
+    public void DestroyPlayer(int destroyPlayerId)
+    {
+        //send a message to all connected players, with id to destroy
+        photonView.RPC("DestroyPlayerRPC", RpcTarget.All, destroyPlayerId);
+    }
+
+    [PunRPC]
+    public void DestroyPlayerRPC(int destroyPlayerId)
+    {
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        foreach(GameObject player in players)
+        {
+            if(player.GetComponent<PhotonView>().Owner.ActorNumber == destroyPlayerId)
+            {
+                if(player.GetComponent<PhotonView>().AmOwner) //you have to be the owner of that PhotonView to destroy
+                    PhotonNetwork.Destroy(player);
+            }
+        }
+    }
+
+
+
     // Update is called once per frame
     void Update()
     {
